@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCA · Semester 1 Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#182238;
+    --ink-soft:#3c4763;
+    --paper:#FBFAF6;
+    --paper-dim:#F1EFE7;
+    --line:#DCD8CC;
+    --gold:#B9832E;
+    --teal:#2F6F63;
+    --brick:#B0503A;
+    --card:#FFFFFF;
+  }
+  html{scroll-behavior:smooth;}
+  body{background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans',sans-serif;}
+  .font-display{font-family:'Fraunces',serif;}
+  .font-mono{font-family:'IBM Plex Mono',monospace;}
+  ::selection{background:var(--gold); color:#fff;}
+
+  .tab-btn{position:relative; transition:color .2s ease;}
+  .tab-btn.active{color:var(--ink);}
+  .tab-btn:not(.active){color:var(--ink-soft);}
+  .tab-btn .underline-bar{position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--gold); transform:scaleX(0); transition:transform .25s ease;}
+  .tab-btn.active .underline-bar{transform:scaleX(1);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .subject-swatch{width:.55rem; height:.55rem; border-radius:9999px; flex-shrink:0;}
+
+  .tt-cell{min-height:64px;}
+
+  details > summary{list-style:none; cursor:pointer;}
+  details > summary::-webkit-details-marker{display:none;}
+  details[open] .chev{transform:rotate(90deg);}
+  .chev{transition:transform .2s ease;}
+
+  input[type=number]{-moz-appearance:textfield;}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+
+  .focus-ring:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  #tabNav{ scrollbar-width:none; -ms-overflow-style:none; }
+  #tabNav::-webkit-scrollbar{ display:none; height:0; }
+  html, body{ overflow-x:hidden; }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ===== NAV ===== -->
+<header class="sticky top-0 z-40 bg-[var(--paper)]/95 backdrop-blur border-b border-[var(--line)]">
+  <div class="max-w-5xl mx-auto px-5">
+    <div class="flex items-center justify-between py-4">
+      <div>
+        <p class="font-display text-lg leading-none" style="color:var(--ink)">Semester 1</p>
+        <p class="text-xs text-[var(--ink-soft)] mt-0.5">MCA · 1MCA01 · Presidency University</p>
+      </div>
+      <nav class="flex gap-4 sm:gap-7 text-sm font-medium overflow-x-auto" id="tabNav">
+        <button class="tab-btn active pb-1 whitespace-nowrap" data-panel="timetable">Timetable<span class="underline-bar"></span></button>
+        <button class="tab-btn pb-1 whitespace-nowrap" data-panel="attendance">Attendance<span class="underline-bar"></span></button>
+        <button class="tab-btn pb-1 whitespace-nowrap" data-panel="tasks">Tasks<span class="underline-bar"></span></button>
+        <button class="tab-btn pb-1 whitespace-nowrap" data-panel="syllabus">Syllabus<span class="underline-bar"></span></button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-5 py-8 sm:py-10">
+
+  <!-- ===================================================== -->
+  <!-- TIMETABLE PANEL -->
+  <!-- ===================================================== -->
+  <section id="panel-timetable" class="panel active">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+      <div>
+        <h1 class="font-display text-3xl sm:text-4xl" style="color:var(--ink)">Weekly timetable</h1>
+        <p class="text-sm text-[var(--ink-soft)] mt-1">Full subject names, no more decoding course codes.</p>
+      </div>
+      <div id="todayChip" class="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full border border-[var(--line)] bg-white"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mb-6 text-xs text-[var(--ink-soft)]" id="legend"></div>
+
+    <!-- Today's classes (mobile-friendly quick view) -->
+    <div class="mb-8 rounded-2xl border border-[var(--line)] bg-white p-5" id="todayCard"></div>
+
+    <!-- Full grid -->
+    <div class="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white">
+      <table class="w-full text-sm border-collapse min-w-[880px]">
+        <thead>
+          <tr class="border-b border-[var(--line)]">
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-4 w-24">Day</th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">1<br><span class="font-mono text-[10px] font-normal">8:50–9:45</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">2<br><span class="font-mono text-[10px] font-normal">9:45–10:40</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">3<br><span class="font-mono text-[10px] font-normal">10:50–11:45</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">4<br><span class="font-mono text-[10px] font-normal">11:45–12:35</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">6<br><span class="font-mono text-[10px] font-normal">13:25–14:20</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">7<br><span class="font-mono text-[10px] font-normal">14:30–15:25</span></th>
+            <th class="text-left font-medium text-[var(--ink-soft)] py-3 px-3">8<br><span class="font-mono text-[10px] font-normal">15:25–16:15</span></th>
+          </tr>
+        </thead>
+        <tbody id="ttBody"></tbody>
+      </table>
+    </div>
+    <p class="text-xs text-[var(--ink-soft)] mt-3">Period 5 (12:35–13:25) is the lunch break, and there's a 10-minute break after periods 2 and 6 — both dropped from the grid to keep it readable.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- ATTENDANCE PANEL -->
+  <!-- ===================================================== -->
+  <section id="panel-attendance" class="panel">
+    <h1 class="font-display text-3xl sm:text-4xl" style="color:var(--ink)">Attendance budget</h1>
+    <p class="text-sm text-[var(--ink-soft)] mt-1 max-w-xl">Class counts come straight from your timetable — nothing to log by hand. Just set your semester dates once, and optionally note classes you've already missed.</p>
+
+    <!-- Plan -->
+    <div class="grid sm:grid-cols-3 gap-4 mt-7 mb-8">
+      <div class="rounded-2xl border border-[var(--line)] bg-white p-5">
+        <p class="font-display text-2xl" style="color:var(--teal)">1</p>
+        <h3 class="font-medium mt-1 mb-1.5">Build a buffer early</h3>
+        <p class="text-sm text-[var(--ink-soft)]">Attendance is easiest to bank in weeks 1–4, before assignments and mini-projects pile up. Treat every class in this window as non-negotiable.</p>
+      </div>
+      <div class="rounded-2xl border border-[var(--line)] bg-white p-5">
+        <p class="font-display text-2xl" style="color:var(--gold)">2</p>
+        <h3 class="font-medium mt-1 mb-1.5">Protect the labs</h3>
+        <p class="text-sm text-[var(--ink-soft)]">Web Technology, Advanced Python, DSA Lab and DB Lab run as 2-hour blocks — missing one costs double what a lecture does. Prioritise these when something has to give.</p>
+      </div>
+      <div class="rounded-2xl border border-[var(--line)] bg-white p-5">
+        <p class="font-display text-2xl" style="color:var(--brick)">3</p>
+        <h3 class="font-medium mt-1 mb-1.5">Spend the budget, don't chase it</h3>
+        <p class="text-sm text-[var(--ink-soft)]">The "can still miss" number already assumes 80%. Once it hits 0 for a subject, every further skip needs a medical certificate, not a guess.</p>
+      </div>
+    </div>
+
+    <!-- Semester settings -->
+    <div class="rounded-2xl border border-[var(--line)] bg-white p-5 mb-6">
+      <p class="text-xs font-medium text-[var(--ink-soft)] mb-3">Semester settings</p>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <label class="block">
+          <span class="text-xs text-[var(--ink-soft)]">First day of class</span>
+          <input type="date" id="semStart" class="focus-ring mt-1 w-full border border-[var(--line)] rounded-md py-1.5 px-2 text-sm">
+        </label>
+        <label class="block">
+          <span class="text-xs text-[var(--ink-soft)]">Teaching weeks this semester</span>
+          <input type="number" id="semWeeks" min="1" max="30" class="focus-ring mt-1 w-full border border-[var(--line)] rounded-md py-1.5 px-2 text-sm">
+        </label>
+        <div>
+          <span class="text-xs text-[var(--ink-soft)]">Semester runs to</span>
+          <p id="semEnd" class="mt-1 text-sm font-medium py-1.5">—</p>
+        </div>
+      </div>
+      <p class="text-xs text-[var(--ink-soft)] mt-3">Based on the module hours in the curriculum, Semester 1 runs about 15 teaching weeks — adjust if your college publishes a different academic calendar. This doesn't subtract public holidays.</p>
+    </div>
+
+    <!-- Overall summary -->
+    <div class="rounded-2xl p-6 mb-6 text-white" style="background:var(--ink)">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-white/60 font-mono">Classes so far, semester-wide</p>
+          <p class="font-display text-5xl mt-1" id="overallHeld">—</p>
+        </div>
+        <div class="text-sm text-white/80 text-right">
+          <p id="overallCount">Set your first day of class above</p>
+          <p id="overallAdvice" class="mt-1 font-medium"></p>
+        </div>
+      </div>
+      <div class="mt-4 h-2 rounded-full bg-white/15 overflow-hidden">
+        <div id="overallBar" class="h-full rounded-full" style="width:0%; background:var(--gold);"></div>
+      </div>
+    </div>
+
+    <!-- Per-subject table -->
+    <div class="rounded-2xl border border-[var(--line)] bg-white overflow-hidden">
+      <div class="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3 border-b border-[var(--line)] text-xs font-medium text-[var(--ink-soft)]">
+        <div class="col-span-4 sm:col-span-3">Subject</div>
+        <div class="hidden sm:block sm:col-span-1 text-center">/week</div>
+        <div class="hidden sm:block sm:col-span-1 text-center">/month</div>
+        <div class="hidden sm:block sm:col-span-1 text-center">/sem</div>
+        <div class="col-span-3 sm:col-span-2 text-center">Missed so far</div>
+        <div class="col-span-3 sm:col-span-2 text-center">Can still miss</div>
+        <div class="col-span-2 sm:col-span-2 text-right">Status</div>
+      </div>
+      <div id="subjectRows"></div>
+    </div>
+    <p class="text-xs text-[var(--ink-soft)] mt-3">"/month" is an average (≈4.3 weeks). "Can still miss" accounts for classes already held and targets ≥80% by the end of the semester — it's not the same as "/sem" × 20%.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- TASKS PANEL -->
+  <!-- ===================================================== -->
+  <section id="panel-tasks" class="panel">
+    <h1 class="font-display text-3xl sm:text-4xl" style="color:var(--ink)">Assignments & tasks</h1>
+    <p class="text-sm text-[var(--ink-soft)] mt-1 max-w-xl">Track lab records, assignments, and project milestones by subject and due date. Saved on this device.</p>
+
+    <!-- Add task form -->
+    <form id="taskForm" class="rounded-2xl border border-[var(--line)] bg-white p-5 mt-7 mb-8">
+      <div class="grid sm:grid-cols-12 gap-3">
+        <input type="text" id="taskTitle" required placeholder="What's due? e.g. Lab record — Experiment 5"
+          class="focus-ring sm:col-span-5 border border-[var(--line)] rounded-md py-2 px-3 text-sm">
+        <select id="taskSubject" class="focus-ring sm:col-span-3 border border-[var(--line)] rounded-md py-2 px-3 text-sm"></select>
+        <select id="taskType" class="focus-ring sm:col-span-2 border border-[var(--line)] rounded-md py-2 px-3 text-sm">
+          <option>Assignment</option>
+          <option>Lab record</option>
+          <option>Mini project</option>
+          <option>Exam prep</option>
+          <option>Other</option>
+        </select>
+        <input type="date" id="taskDue" required class="focus-ring sm:col-span-2 border border-[var(--line)] rounded-md py-2 px-3 text-sm">
+      </div>
+      <button type="submit" class="mt-3 text-sm font-medium px-4 py-2 rounded-md text-white" style="background:var(--ink)">Add task</button>
+    </form>
+
+    <div class="flex items-center gap-2 mb-4 text-xs font-medium">
+      <button data-filter="active" class="task-filter-btn px-3 py-1.5 rounded-full border border-[var(--line)]">To do</button>
+      <button data-filter="done" class="task-filter-btn px-3 py-1.5 rounded-full border border-[var(--line)]">Done</button>
+      <button data-filter="all" class="task-filter-btn px-3 py-1.5 rounded-full border border-[var(--line)]">All</button>
+    </div>
+
+    <div id="taskList" class="space-y-3"></div>
+    <p id="taskEmpty" class="text-sm text-[var(--ink-soft)] hidden">Nothing here yet.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- SYLLABUS PANEL -->
+  <!-- ===================================================== -->
+  <section id="panel-syllabus" class="panel">
+    <h1 class="font-display text-3xl sm:text-4xl" style="color:var(--ink)">Syllabus, subject by subject</h1>
+    <p class="text-sm text-[var(--ink-soft)] mt-1">All ten Semester 1 courses. Tap a subject to see its four modules.</p>
+
+    <div class="mt-7 space-y-3" id="syllabusList"></div>
+  </section>
+
+</main>
+
+<footer class="max-w-5xl mx-auto px-5 pb-10 pt-4 text-xs text-[var(--ink-soft)] border-t border-[var(--line)] mt-6">
+  Built from the MCA course curriculum and the 1MCA01 timetable · Presidency University, Itgalpura, Yelahanka, Bengaluru
+</footer>
+
+<script>
+// ---------------------------------------------------------------
+// DATA
+// ---------------------------------------------------------------
+const SUBJECTS = {
+  ENG5001: { name: "English for Employability", color: "#B0503A", type: "Theory" },
+  MAT4001: { name: "Probability & Statistics",   color: "#B9832E", type: "Theory" },
+  CSA4201: { name: "Data Structures & Algorithms", color: "#2F6F63", type: "Theory" },
+  CSA4203: { name: "Computer Networks & Security", color: "#5B6EE1", type: "Theory" },
+  CSA4207: { name: "Database Systems",            color: "#8B5CF6", type: "Theory" },
+  CSA4303: { name: "Web Technology",              color: "#C2185B", type: "Theory + Lab" },
+  CSA4305: { name: "Advanced Python Programming", color: "#0E7490", type: "Theory + Lab" },
+  CSA4301: { name: "Data Structures & Algorithms Lab", color: "#2F6F63", type: "Lab" },
+  CSA4307: { name: "Database Systems Lab",        color: "#8B5CF6", type: "Lab" },
+  CSA4001: { name: "Design Thinking & Innovation", color: "#9A6B12", type: "Foundation" },
+};
+
+// Timetable: day -> array over periods [1,2,3,4,6,7,8]. Each cell: null or {code, note}
+const TIMETABLE = {
+  Mon: [
+    { code:"CSA4305", note:"Lab · B1 LIVL05 / B2 LIVL05a", span:2 },
+    null,
+    { code:"CSA4207" },
+    { code:"MAT4001" },
+    { code:"CSA4001" },
+    { code:"CSA4203" },
+    { code:"ENG5001" },
+  ],
+  Tue: [
+    { code:"CSA4303", note:"Lab · B1 DIVL06 / B2 DIVL06a", span:2 },
+    null,
+    { code:"CSA4307", note:"Lab · B1 LFL05 / B2 LFL05a", span:2 },
+    null,
+    { code:"CSA4207" },
+    { code:"CSA4201" },
+    { code:"CSA4203" },
+  ],
+  Wed: [
+    { code:"CSA4201" },
+    { code:"CSA4207" },
+    { code:"CSA4301", note:"Lab · B1 LFL02 / B2 LFL02a", span:2 },
+    null,
+    { code:"CSA4203" },
+    null,
+    null,
+  ],
+  Thu: [
+    { code:"CSA4303" },
+    { code:"CSA4001" },
+    { code:"MAT4001" },
+    { code:"ENG5001" },
+    null,
+    { code:"CSA4305", note:"Lab · B1 LIVL05 / B2 LIVL05a", span:2 },
+    null,
+  ],
+  Fri: [
+    { code:"CSA4303", note:"Lab · B1 DIVL06 / B2 DIVL06a", span:2 },
+    null,
+    { code:"CSA4305" },
+    { code:"MAT4001" },
+    null,
+    { code:"ENG5001" },
+    { code:"CSA4201" },
+  ],
+};
+const PERIOD_TIMES = ["8:50–9:45","9:45–10:40","10:50–11:45","11:45–12:35","13:25–14:20","14:30–15:25","15:25–16:15"];
+const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
+
+// Full-day timeline in minutes-since-midnight, including breaks/lunch, so
+// "now" can be located precisely. idx lines up with TIMETABLE slot arrays.
+const TIMELINE = [
+  { type:"class", idx:0, start:530, end:585 },   // Period 1  8:50–9:45
+  { type:"class", idx:1, start:585, end:640 },   // Period 2  9:45–10:40
+  { type:"break", start:640, end:650, label:"Short break" },
+  { type:"class", idx:2, start:650, end:705 },   // Period 3  10:50–11:45
+  { type:"class", idx:3, start:705, end:755 },   // Period 4  11:45–12:35
+  { type:"break", start:755, end:805, label:"Lunch break" },
+  { type:"class", idx:4, start:805, end:860 },   // Period 6  13:25–14:20
+  { type:"break", start:860, end:870, label:"Short break" },
+  { type:"class", idx:5, start:870, end:925 },   // Period 7  14:30–15:25
+  { type:"class", idx:6, start:925, end:975 },   // Period 8  15:25–16:15
+];
+function fmtMinutes(m){
+  const h24 = Math.floor(m/60), min = m%60;
+  const h = ((h24+11)%12)+1;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  return `${h}:${String(min).padStart(2,'0')} ${ampm}`;
+}
+// Resolve what's scheduled at a given timeline idx for a day, accounting for
+// 2-period lab blocks (span:2) where only the first slot holds the object.
+function cellAt(day, idx){
+  const slots = TIMETABLE[day];
+  if(!slots) return null;
+  if(slots[idx]) return { cell: slots[idx], startIdx: idx };
+  if(idx>0 && slots[idx-1] && slots[idx-1].span===2) return { cell: slots[idx-1], startIdx: idx-1 };
+  return null;
+}
+// Where things stand for a given day at a given minute-of-day.
+function getDayStatus(day, nowMin){
+  if(nowMin < TIMELINE[0].start){
+    const first = findNextClass(day, -1);
+    return { state:'before', next:first };
+  }
+  if(nowMin >= TIMELINE[TIMELINE.length-1].end){
+    return { state:'over' };
+  }
+  for(const seg of TIMELINE){
+    if(nowMin >= seg.start && nowMin < seg.end){
+      if(seg.type === 'class'){
+        const found = cellAt(day, seg.idx);
+        if(found) return { state:'class', idx:seg.idx, startIdx:found.startIdx, cell:found.cell, seg };
+        return { state:'free', seg, next: findNextClass(day, seg.end-1) };
+      }
+      return { state: seg.label==='Lunch break' ? 'lunch' : 'break', seg, next: findNextClass(day, seg.end-1) };
+    }
+  }
+  return { state:'over' };
+}
+function findNextClass(day, afterMin){
+  for(const seg of TIMELINE){
+    if(seg.type==='class' && seg.start > afterMin){
+      const found = cellAt(day, seg.idx);
+      if(found && found.startIdx === seg.idx) return { cell:found.cell, seg };
+    }
+  }
+  return null;
+}
+
+const SYLLABUS = {
+  ENG5001: [
+    ["Active listening", "TED talks & podcasts for vocabulary and intonation, barriers to listening, types of listening, note-taking practice."],
+    ["Effective speaking", "Workplace communication and etiquette, interview practice, formal vs informal communication, presentation skills, short speeches."],
+    ["Reading strategies", "Components of reading, analytical and decision-making skills through reading, reading and note-making."],
+    ["Scientific & research writing", "Report writing (types, structure), academic referencing, writing a research article, bibliography."],
+  ],
+  MAT4001: [
+    ["Basic probability", "Permutations, combinations, addition and multiplication laws, conditional probability, Bayes' theorem."],
+    ["Random variables & distributions", "Discrete/continuous random variables, binomial, Poisson, exponential, normal and gamma distributions, bivariate distributions."],
+    ["Statistical methods", "Moments, skewness, kurtosis, correlation (Pearson & rank), regression analysis, curve fitting."],
+    ["Sampling theory", "Sampling distributions, standard error, Type I/II errors, hypothesis testing, z/t/chi-square tests."],
+  ],
+  CSA4201: [
+    ["Review of traditional structures", "Stacks, queues, lists and graphs, including Dijkstra's algorithm and spanning-tree algorithms."],
+    ["Dictionaries & hash tables", "Dictionary ADT, hashing, collision resolution — separate chaining, linear and quadratic probing."],
+    ["Skip lists & trees", "Randomised data structures, binary search trees, AVL trees, splay trees, heaps."],
+    ["Text processing", "Pattern matching (Brute-Force, Boyer-Moore, Knuth-Morris-Pratt), tries, Huffman coding, longest common subsequence."],
+  ],
+  CSA4207: [
+    ["Introduction to databases", "Database architecture, DBA roles, data independence, database languages and design, transaction management."],
+    ["Relational databases", "Relational algebra, ER diagrams, schemas and keys, normalisation, functional dependencies."],
+    ["MySQL & NoSQL", "MySQL data types, queries, views, triggers and PL/SQL; MongoDB CRUD and indexing; Cassandra data model."],
+    ["Advanced database systems", "Object-oriented databases, spatial and mobile databases, multimedia databases, overview of PostgreSQL."],
+  ],
+  CSA4203: [
+    ["Data communication & error control", "OSI/TCP-IP models, analog/digital signals, guided/unguided media, parity check, CRC, Hamming distance."],
+    ["Network communication & protocols", "IPv4 subnetting and routing, distance-vector and link-state routing, IPv6, flow control (sliding window, ARQ), TCP/UDP."],
+    ["Network security foundations", "Security principles, types of attacks, security services and mechanisms, classical and modern cryptography basics."],
+    ["Cryptography & secure protocols", "Symmetric ciphers (DES, AES, Blowfish, IDEA), asymmetric ciphers (RSA, Diffie-Hellman), SSL/TLS."],
+  ],
+  CSA4303: [
+    ["Internet standards & HTML", "Client/server computing, HTTP, web servers, HTML5 structure, forms, tables, hyperlinks."],
+    ["UI design with CSS", "Selectors, box model, backgrounds, positioning, responsive design and CSS frameworks."],
+    ["JavaScript", "Programming constructs, arrays and functions, the DOM, event handling, form validation, jQuery basics."],
+    ["Server-side development", "PHP structure and data types, sessions and objects, working with MySQL from PHP."],
+  ],
+  CSA4305: [
+    ["Object-oriented Python", "Python basics, data types, conditionals, lists/tuples/sets/dictionaries, functions, OOP concepts."],
+    ["Advanced Python", "Regular expressions, custom modules, multithreading and multiprocessing, testing frameworks, lambda/map functions."],
+    ["Data analysis & ML essentials", "NumPy arrays, Pandas, regression and data cleaning, visualisation with Matplotlib/Seaborn/Plotly, MySQL connectivity."],
+    ["GUI, case study & project", "Tkinter/PyQt interfaces, digital image processing, web scraping, an end-to-end data project."],
+  ],
+  CSA4301: [
+    ["Foundational ADTs", "Stacks, queues, lists and graphs applied to computational problems."],
+    ["Hashing & dictionaries", "Dictionary implementations and hashing techniques for efficient storage and retrieval."],
+    ["Trees & graphs", "Heaps, binary trees, Red-Black trees; shortest-path and minimum-spanning-tree algorithms."],
+    ["Advanced structures", "Fibonacci heaps, binomial queues and tries, implemented and analysed hands-on."],
+  ],
+  CSA4307: [
+    ["Database setup", "Designing a relational schema with primary/foreign keys — customers, products, suppliers, orders and payments."],
+    ["Insert & retrieve", "INSERT and SELECT statements, purchase histories, price lists, referential integrity."],
+    ["Filtering, sorting & aggregation", "WHERE, BETWEEN, ORDER BY, LIKE, GROUP BY, HAVING for sales and customer analysis."],
+    ["Joins, subqueries & views", "INNER/LEFT joins, correlated subqueries, and creating views for reporting."],
+  ],
+  CSA4001: [
+    ["Design thinking mindset", "User-centred design principles and how the design-thinking process applies to real problems."],
+    ["User research", "Interviews, observation, contextual inquiry, empathy mapping and persona development."],
+    ["Define the problem", "Journey mapping, pain-point identification, and writing point-of-view problem statements."],
+    ["Ideate, prototype & present", "How-Might-We questions, brainstorming, Crazy Eights, SCAMPER, low-fidelity prototyping and iterative testing."],
+  ],
+};
+
+// ---------------------------------------------------------------
+// TABS
+// ---------------------------------------------------------------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.panel).classList.add('active');
+  });
+});
+
+// ---------------------------------------------------------------
+// TIMETABLE RENDER
+// ---------------------------------------------------------------
+function subjectChip(code, note, live){
+  const s = SUBJECTS[code];
+  if(!s) return '';
+  return `<div class="rounded-lg p-2.5 h-full" style="background:${s.color}${live?'22':'14'}; border:1px solid ${s.color}${live?'66':'33'};">
+      <div class="flex items-center gap-1.5 mb-0.5">
+        <span class="subject-swatch" style="background:${s.color}"></span>
+        <span class="text-[11px] font-mono text-[var(--ink-soft)]">${code}</span>
+        ${live ? `<span class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full ml-auto" style="background:${s.color}; color:#fff;">NOW</span>` : ''}
+      </div>
+      <p class="text-xs font-medium leading-snug" style="color:var(--ink)">${s.name}</p>
+      ${note ? `<p class="text-[10px] text-[var(--ink-soft)] mt-1">${note}</p>` : ''}
+    </div>`;
+}
+
+function renderTimetable(){
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const todayIdx = now.getDay(); // 0 Sun ... 6 Sat
+  const todayName = DAYS[todayIdx-1]; // Mon=1
+  const status = todayName ? getDayStatus(todayName, nowMin) : null;
+  const liveIdx = (status && status.state==='class') ? status.startIdx : null;
+
+  const body = document.getElementById('ttBody');
+  body.innerHTML = '';
+
+  DAYS.forEach(day=>{
+    const row = document.createElement('tr');
+    row.className = 'border-b border-[var(--line)] last:border-0' + (day===todayName ? ' bg-[var(--paper-dim)]' : '');
+    let cellsHtml = `<td class="align-top py-3 px-4 font-medium">${day}${day===todayName ? ' <span class="text-[10px] font-mono" style="color:var(--gold)">· today</span>' : ''}</td>`;
+    const slots = TIMETABLE[day];
+    let i=0;
+    while(i < slots.length){
+      const cell = slots[i];
+      const isLive = day===todayName && liveIdx===i;
+      const liveRing = isLive ? ' ring-2 ring-offset-1' : '';
+      const liveStyle = isLive ? ` style="--tw-ring-color:${SUBJECTS[cell.code].color}"` : '';
+      if(cell === null){
+        cellsHtml += `<td class="align-top p-2 tt-cell"></td>`;
+        i++;
+      } else if(cell.span === 2){
+        cellsHtml += `<td class="align-top p-2 tt-cell" colspan="2"><div class="relative rounded-lg${liveRing}"${liveStyle}>${subjectChip(cell.code, cell.note, isLive)}</div></td>`;
+        i += 2;
+      } else {
+        cellsHtml += `<td class="align-top p-2 tt-cell"><div class="relative rounded-lg${liveRing}"${liveStyle}>${subjectChip(cell.code, cell.note, isLive)}</div></td>`;
+        i++;
+      }
+    }
+    row.innerHTML = cellsHtml;
+    body.appendChild(row);
+  });
+
+  // legend
+  const legend = document.getElementById('legend');
+  legend.innerHTML = Object.entries(SUBJECTS).map(([code,s])=>
+    `<span class="flex items-center gap-1.5"><span class="subject-swatch" style="background:${s.color}"></span>${s.name}</span>`
+  ).join('');
+
+  // today card + header status chip — driven by the actual current time
+  const todayCard = document.getElementById('todayCard');
+  const chip = document.getElementById('todayChip');
+  const dateLabel = now.toLocaleDateString('en-IN',{weekday:'long', day:'numeric', month:'short'});
+  const timeLabel = now.toLocaleTimeString('en-IN',{hour:'numeric', minute:'2-digit'});
+
+  if(DAYS.includes(todayName)){
+    // --- header pill text ---
+    let pillText = timeLabel;
+    let pillColor = 'var(--ink-soft)';
+    if(status.state === 'class'){
+      const s = SUBJECTS[status.cell.code];
+      pillText = `● In class: ${s.name} · ends ${fmtMinutes(status.seg.end)}`;
+      pillColor = s.color;
+    } else if(status.state === 'lunch'){
+      pillText = `Lunch break · until ${fmtMinutes(status.seg.end)}`;
+      pillColor = 'var(--gold)';
+    } else if(status.state === 'break'){
+      pillText = `Short break · until ${fmtMinutes(status.seg.end)}`;
+      pillColor = 'var(--gold)';
+    } else if(status.state === 'free'){
+      pillText = status.next ? `Free period · next up at ${fmtMinutes(status.next.seg.start)}` : `Free period · nothing else today`;
+    } else if(status.state === 'before'){
+      pillText = status.next ? `Starts at ${fmtMinutes(status.next.seg.start)}` : `No classes today`;
+    } else if(status.state === 'over'){
+      pillText = 'Classes done for today';
+    }
+    chip.innerHTML = `<span style="color:${pillColor}">${pillText}</span>`;
+
+    // --- today card body: full list with the live entry highlighted ---
+    const slots = TIMETABLE[todayName];
+    let rows = '';
+    let i = 0;
+    while(i < slots.length){
+      const cell = slots[i];
+      if(cell){
+        const s = SUBJECTS[cell.code];
+        const isLive = status.state==='class' && status.startIdx===i;
+        const tLabel = cell.span===2 ? `${PERIOD_TIMES[i]} – ${PERIOD_TIMES[i+1].split('–')[1]}` : PERIOD_TIMES[i];
+        rows += `<div class="flex items-center gap-3 py-2.5 px-3 -mx-3 rounded-lg border-b border-[var(--line)] last:border-0 ${isLive ? '' : ''}" ${isLive ? `style="background:${s.color}14; border-color:transparent;"` : ''}>
+          <span class="font-mono text-xs text-[var(--ink-soft)] w-32 shrink-0">${tLabel}</span>
+          <span class="subject-swatch" style="background:${s.color}"></span>
+          <span class="text-sm font-medium">${s.name}</span>
+          ${isLive ? `<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full text-white" style="background:${s.color}">NOW</span>` : ''}
+          ${cell.note ? `<span class="text-xs text-[var(--ink-soft)] ml-auto hidden sm:block">${cell.note}</span>` : ''}
+        </div>`;
+        i += cell.span || 1;
+      } else { i++; }
+    }
+
+    let statusLine = '';
+    if(status.state === 'class'){
+      const s = SUBJECTS[status.cell.code];
+      statusLine = `In class right now — <strong style="color:${s.color}">${s.name}</strong>, ends at ${fmtMinutes(status.seg.end)}.`;
+    } else if(status.state === 'lunch'){
+      statusLine = `Lunch break until ${fmtMinutes(status.seg.end)}${status.next ? `, then ${SUBJECTS[status.next.cell.code].name}` : ''}.`;
+    } else if(status.state === 'break'){
+      statusLine = `Short break until ${fmtMinutes(status.seg.end)}${status.next ? `, then ${SUBJECTS[status.next.cell.code].name}` : ''}.`;
+    } else if(status.state === 'free'){
+      statusLine = status.next ? `Free right now — next up is ${SUBJECTS[status.next.cell.code].name} at ${fmtMinutes(status.next.seg.start)}.` : `Free right now, and nothing else scheduled today.`;
+    } else if(status.state === 'before'){
+      statusLine = status.next ? `Not started yet — first class is ${SUBJECTS[status.next.cell.code].name} at ${fmtMinutes(status.next.seg.start)}.` : `No classes scheduled today.`;
+    } else if(status.state === 'over'){
+      statusLine = `Classes are done for the day.`;
+    }
+
+    todayCard.innerHTML = `
+      <div class="flex items-center justify-between mb-1">
+        <p class="font-display text-xl">Today · ${dateLabel}</p>
+        <span class="font-mono text-xs text-[var(--ink-soft)]">${timeLabel}</span>
+      </div>
+      <p class="text-sm text-[var(--ink-soft)] mb-3">${statusLine}</p>
+      ${rows || `<p class="text-sm text-[var(--ink-soft)]">No classes today.</p>`}`;
+  } else {
+    chip.innerHTML = `<span style="color:var(--ink-soft)">Weekend · ${timeLabel}</span>`;
+    todayCard.innerHTML = `<div class="flex items-center justify-between mb-1">
+        <p class="font-display text-xl">${dateLabel}</p>
+        <span class="font-mono text-xs text-[var(--ink-soft)]">${timeLabel}</span>
+      </div>
+      <p class="text-sm text-[var(--ink-soft)] mb-1">It's the weekend — no classes Saturday or Sunday. Here's Monday's line-up to get ahead:</p>` + renderDayList('Mon');
+  }
+}
+function renderDayList(day){
+  const slots = TIMETABLE[day];
+  let rows = '', i=0;
+  while(i<slots.length){
+    const cell = slots[i];
+    if(cell){
+      const s = SUBJECTS[cell.code];
+      const timeLabel = cell.span===2 ? `${PERIOD_TIMES[i]} – ${PERIOD_TIMES[i+1].split('–')[1]}` : PERIOD_TIMES[i];
+      rows += `<div class="flex items-center gap-3 py-2 border-b border-[var(--line)] last:border-0">
+        <span class="font-mono text-xs text-[var(--ink-soft)] w-32 shrink-0">${timeLabel}</span>
+        <span class="subject-swatch" style="background:${s.color}"></span>
+        <span class="text-sm font-medium">${s.name}</span>
+      </div>`;
+      i += cell.span || 1;
+    } else { i++; }
+  }
+  return `<div class="mt-3">${rows}</div>`;
+}
+
+// ---------------------------------------------------------------
+// ATTENDANCE — counts come from the timetable; you only log misses
+// ---------------------------------------------------------------
+const SETTINGS_KEY = 'mca_sem1_settings_v1';
+const MISSED_KEY = 'mca_sem1_missed_v1';
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveSettings(s){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }catch(e){} }
+function loadMissed(){
+  try{
+    const raw = localStorage.getItem(MISSED_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveMissed(m){ try{ localStorage.setItem(MISSED_KEY, JSON.stringify(m)); }catch(e){} }
+
+// Periods/week per subject, straight from the timetable data (spans count double).
+function weeklyPeriods(){
+  const counts = {};
+  Object.keys(SUBJECTS).forEach(c=>counts[c]=0);
+  DAYS.forEach(day=>{
+    TIMETABLE[day].forEach(cell=>{ if(cell) counts[cell.code] += (cell.span||1); });
+  });
+  return counts;
+}
+// Walk every calendar day from start to end (inclusive) and sum periods per
+// subject for the weekdays that fall in range — this is how "held so far"
+// and the semester total are both derived, so they stay consistent.
+function periodsBetween(startStr, endDate){
+  const counts = {};
+  Object.keys(SUBJECTS).forEach(c=>counts[c]=0);
+  if(!startStr) return counts;
+  const start = new Date(startStr + 'T00:00:00');
+  if(isNaN(start) || start > endDate) return counts;
+  let d = new Date(start);
+  while(d <= endDate){
+    const dayName = DAYS[d.getDay()-1];
+    if(dayName && TIMETABLE[dayName]){
+      TIMETABLE[dayName].forEach(cell=>{ if(cell) counts[cell.code] += (cell.span||1); });
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return counts;
+}
+function addDays(dateStr, days){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d;
+}
+
+function renderAttendance(){
+  const settings = loadSettings();
+  const semStartInput = document.getElementById('semStart');
+  const semWeeksInput = document.getElementById('semWeeks');
+  if(!semStartInput.value) semStartInput.value = settings.start || '';
+  if(!semWeeksInput.value) semWeeksInput.value = settings.weeks || 15;
+
+  const startStr = semStartInput.value;
+  const weeks = Math.max(1, Number(semWeeksInput.value) || 15);
+  saveSettings({ start: startStr, weeks });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const semEndDate = startStr ? addDays(startStr, weeks*7 - 1) : null;
+  document.getElementById('semEnd').textContent = semEndDate
+    ? semEndDate.toLocaleDateString('en-IN',{day:'numeric', month:'short', year:'numeric'})
+    : '—';
+
+  const perWeek = weeklyPeriods();
+  const heldSoFar = startStr ? periodsBetween(startStr, semEndDate && today > semEndDate ? semEndDate : today) : {};
+  const totalSem = startStr ? periodsBetween(startStr, semEndDate) : {};
+  const missed = loadMissed();
+
+  const container = document.getElementById('subjectRows');
+  container.innerHTML = '';
+  let sumHeld=0, sumMissed=0, sumTotal=0, sumCanMiss=0;
+
+  Object.entries(SUBJECTS).forEach(([code, s])=>{
+    const wk = perWeek[code] || 0;
+    const mo = Math.round(wk * 4.345 * 10) / 10;
+    const held = heldSoFar[code] || 0;
+    const total = totalSem[code] || 0;
+    const missedVal = missed[code] !== undefined ? missed[code] : '';
+    const missedNum = missedVal === '' ? 0 : Math.max(0, Number(missedVal));
+    const attended = Math.max(0, held - missedNum);
+    const remaining = Math.max(0, total - held);
+
+    let canMiss = null, badgeColor='#9CA3AF', badgeBg='#F3F4F6', badgeText='Set start date';
+    if(startStr && total > 0){
+      // futureMiss such that (attended + remaining - futureMiss) / total >= 0.8
+      canMiss = Math.floor(attended + remaining - 0.8*total);
+      canMiss = Math.max(0, Math.min(canMiss, remaining));
+      sumHeld += held; sumMissed += missedNum; sumTotal += total; sumCanMiss += canMiss;
+      const pctSoFar = held > 0 ? attended/held*100 : 100;
+      if(canMiss === 0 && pctSoFar < 80){ badgeColor='#B0503A'; badgeBg='#B0503A14'; badgeText='At risk'; }
+      else if(canMiss <= Math.ceil(wk/2)){ badgeColor='#B9832E'; badgeBg='#B9832E14'; badgeText='Tight'; }
+      else { badgeColor='#2F6F63'; badgeBg='#2F6F6314'; badgeText='Comfortable'; }
+    }
+
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-12 gap-2 items-center px-4 sm:px-5 py-3 border-b border-[var(--line)] last:border-0';
+    row.innerHTML = `
+      <div class="col-span-4 sm:col-span-3 flex items-center gap-2 min-w-0">
+        <span class="subject-swatch" style="background:${s.color}"></span>
+        <div class="min-w-0">
+          <p class="text-sm font-medium truncate">${s.name}</p>
+          <p class="text-[11px] text-[var(--ink-soft)] font-mono">${code} · ${held}/${total||'—'} so far</p>
+        </div>
+      </div>
+      <div class="hidden sm:block sm:col-span-1 text-center font-mono text-sm">${wk}</div>
+      <div class="hidden sm:block sm:col-span-1 text-center font-mono text-sm">${mo}</div>
+      <div class="hidden sm:block sm:col-span-1 text-center font-mono text-sm">${total||'—'}</div>
+      <div class="col-span-3 sm:col-span-2 text-center">
+        <input type="number" min="0" inputmode="numeric" data-code="${code}" value="${missedVal}"
+          class="focus-ring w-14 text-center border border-[var(--line)] rounded-md py-1 text-sm" placeholder="0">
+      </div>
+      <div class="col-span-3 sm:col-span-2 text-center font-mono text-sm font-medium" style="color:${canMiss===null?'inherit':(canMiss===0?'var(--brick)':'var(--ink)')}">${canMiss===null?'—':canMiss}</div>
+      <div class="col-span-2 sm:col-span-2 text-right">
+        <span class="inline-block text-[11px] font-medium px-2 py-1 rounded-full" style="color:${badgeColor}; background:${badgeBg}">${badgeText}</span>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  // overall
+  const overallHeldEl = document.getElementById('overallHeld');
+  const overallCountEl = document.getElementById('overallCount');
+  const overallAdviceEl = document.getElementById('overallAdvice');
+  const overallBar = document.getElementById('overallBar');
+
+  if(!startStr){
+    overallHeldEl.textContent = '—';
+    overallCountEl.textContent = 'Set your first day of class above';
+    overallAdviceEl.textContent = '';
+    overallBar.style.width = '0%';
+  } else {
+    const attendedSum = sumHeld - sumMissed;
+    const pct = sumHeld > 0 ? attendedSum/sumHeld*100 : 100;
+    overallHeldEl.textContent = sumHeld;
+    overallCountEl.textContent = `${attendedSum} attended of ${sumHeld} held · ${pct.toFixed(1)}% so far`;
+    overallBar.style.width = Math.min(pct,100) + '%';
+    overallBar.style.background = pct >= 80 ? 'var(--teal)' : (pct >= 70 ? 'var(--gold)' : 'var(--brick)');
+    overallAdviceEl.textContent = `Can still miss ${sumCanMiss} more classes across all subjects and finish ≥80%`;
+  }
+
+  container.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      let val = inp.value.replace(/[^0-9]/g,'');
+      inp.value = val;
+      const m = loadMissed();
+      m[inp.dataset.code] = val;
+      saveMissed(m);
+      renderAttendance();
+    });
+  });
+}
+
+document.getElementById('semStart').addEventListener('change', renderAttendance);
+document.getElementById('semWeeks').addEventListener('input', renderAttendance);
+
+// ---------------------------------------------------------------
+// SYLLABUS
+// ---------------------------------------------------------------
+function renderSyllabus(){
+  const list = document.getElementById('syllabusList');
+  list.innerHTML = Object.entries(SUBJECTS).map(([code, s])=>{
+    const modules = SYLLABUS[code] || [];
+    return `
+    <details class="rounded-2xl border border-[var(--line)] bg-white overflow-hidden">
+      <summary class="flex items-center justify-between gap-3 px-5 py-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="subject-swatch" style="background:${s.color}"></span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium truncate">${s.name}</p>
+            <p class="text-[11px] text-[var(--ink-soft)] font-mono">${code} · ${s.type}</p>
+          </div>
+        </div>
+        <svg class="chev w-4 h-4 shrink-0 text-[var(--ink-soft)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </summary>
+      <div class="px-5 pb-5 pt-1 border-t border-[var(--line)] grid sm:grid-cols-2 gap-3">
+        ${modules.map((m,i)=>`
+          <div class="rounded-xl p-3.5" style="background:${s.color}0D;">
+            <p class="text-[11px] font-mono text-[var(--ink-soft)] mb-1">Module ${i+1}</p>
+            <p class="text-sm font-medium mb-1">${m[0]}</p>
+            <p class="text-xs text-[var(--ink-soft)] leading-relaxed">${m[1]}</p>
+          </div>`).join('')}
+      </div>
+    </details>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------
+// TASKS
+// ---------------------------------------------------------------
+const TASKS_KEY = 'mca_sem1_tasks_v1';
+let taskFilter = 'active';
+
+function loadTasks(){
+  try{
+    const raw = localStorage.getItem(TASKS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveTasks(t){ try{ localStorage.setItem(TASKS_KEY, JSON.stringify(t)); }catch(e){} }
+
+// Populate the subject dropdown once.
+(function initTaskSubjectSelect(){
+  const sel = document.getElementById('taskSubject');
+  sel.innerHTML = `<option value="">No subject</option>` +
+    Object.entries(SUBJECTS).map(([code,s])=>`<option value="${code}">${s.name}</option>`).join('');
+})();
+
+document.getElementById('taskForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const title = document.getElementById('taskTitle').value.trim();
+  const subject = document.getElementById('taskSubject').value;
+  const type = document.getElementById('taskType').value;
+  const due = document.getElementById('taskDue').value;
+  if(!title || !due) return;
+  const tasks = loadTasks();
+  tasks.push({ id: Date.now().toString(36), title, subject, type, due, done:false });
+  saveTasks(tasks);
+  e.target.reset();
+  renderTasks();
+});
+
+document.querySelectorAll('.task-filter-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    taskFilter = btn.dataset.filter;
+    renderTasks();
+  });
+});
+
+function daysUntil(dueStr){
+  const due = new Date(dueStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((due-today)/86400000);
+}
+
+function renderTasks(){
+  document.querySelectorAll('.task-filter-btn').forEach(btn=>{
+    const active = btn.dataset.filter === taskFilter;
+    btn.style.background = active ? 'var(--ink)' : '#fff';
+    btn.style.color = active ? '#fff' : 'var(--ink-soft)';
+    btn.style.borderColor = active ? 'var(--ink)' : 'var(--line)';
+  });
+
+  const tasks = loadTasks();
+  let shown = tasks.filter(t=>{
+    if(taskFilter==='active') return !t.done;
+    if(taskFilter==='done') return t.done;
+    return true;
+  });
+  shown = shown.slice().sort((a,b)=> a.due.localeCompare(b.due));
+
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('taskEmpty');
+  list.innerHTML = '';
+
+  if(shown.length === 0){
+    empty.classList.remove('hidden');
+    empty.textContent = taskFilter === 'done' ? "Nothing completed yet." : "Nothing due — add a task above.";
+  } else {
+    empty.classList.add('hidden');
+  }
+
+  shown.forEach(t=>{
+    const s = t.subject ? SUBJECTS[t.subject] : null;
+    const d = daysUntil(t.due);
+    let dueLabel, dueColor;
+    if(t.done){ dueLabel = 'Done'; dueColor = 'var(--teal)'; }
+    else if(d < 0){ dueLabel = `${-d} day${d===-1?'':'s'} overdue`; dueColor = 'var(--brick)'; }
+    else if(d === 0){ dueLabel = 'Due today'; dueColor = 'var(--brick)'; }
+    else if(d <= 3){ dueLabel = `Due in ${d} day${d===1?'':'s'}`; dueColor = 'var(--gold)'; }
+    else { dueLabel = `Due in ${d} days`; dueColor = 'var(--ink-soft)'; }
+
+    const dueDate = new Date(t.due+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+    const row = document.createElement('div');
+    row.className = 'flex items-start gap-3 rounded-2xl border border-[var(--line)] bg-white p-4';
+    row.innerHTML = `
+      <button data-id="${t.id}" class="task-toggle mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center"
+        style="border-color:${t.done ? 'var(--teal)' : 'var(--line)'}; background:${t.done ? 'var(--teal)' : 'transparent'}">
+        ${t.done ? '<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' : ''}
+      </button>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium ${t.done ? 'line-through text-[var(--ink-soft)]' : ''}">${t.title}</p>
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-[var(--ink-soft)]">
+          ${s ? `<span class="flex items-center gap-1"><span class="subject-swatch" style="background:${s.color}"></span>${s.name}</span><span>·</span>` : ''}
+          <span>${t.type}</span><span>·</span><span>${dueDate}</span>
+        </div>
+      </div>
+      <span class="text-xs font-medium shrink-0" style="color:${dueColor}">${dueLabel}</span>
+      <button data-id="${t.id}" class="task-delete text-[var(--ink-soft)] hover:text-[var(--brick)] shrink-0 ml-1" title="Delete task">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.task-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tasks = loadTasks();
+      const t = tasks.find(x=>x.id===btn.dataset.id);
+      if(t){ t.done = !t.done; saveTasks(tasks); renderTasks(); }
+    });
+  });
+  list.querySelectorAll('.task-delete').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      let tasks = loadTasks();
+      tasks = tasks.filter(x=>x.id!==btn.dataset.id);
+      saveTasks(tasks);
+      renderTasks();
+    });
+  });
+}
+
+renderTimetable();
+renderAttendance();
+renderSyllabus();
+renderTasks();
+
+// Keep "now" accurate while the page stays open, without re-rendering
+// attendance inputs or the syllabus accordion state.
+setInterval(renderTimetable, 30000);
+</script>
+</body>
+</html>
